@@ -27,9 +27,9 @@
 #
 # 3. The following remote source files that were added to the original project:-
 #
-#    "C:/Users/bupto/Desktop/JD Files/sources/camera_read.sv"
-#    "C:/Users/bupto/Desktop/JD Files/sources/top_level.sv"
-#    "C:/Users/bupto/Desktop/JD Files/xdc/ddr.xdc"
+#    "C:/Users/bupto/Desktop/JustDance/sources/camera_read.sv"
+#    "C:/Users/bupto/Desktop/JustDance/sources/top_level.sv"
+#    "C:/Users/bupto/Desktop/JustDance/xdc/ddr.xdc"
 #
 #*****************************************************************************************
 
@@ -98,7 +98,7 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/../JD Files/jd-working"]"
+set orig_proj_dir "[file normalize "$origin_dir/../JustDance/jd-working"]"
 
 # Create project
 create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7a100tcsg324-1
@@ -127,18 +127,18 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
- [file normalize "${origin_dir}/../JD Files/sources/camera_read.sv"] \
- [file normalize "${origin_dir}/../JD Files/sources/top_level.sv"] \
+ [file normalize "${origin_dir}/../JustDance/sources/camera_read.sv"] \
+ [file normalize "${origin_dir}/../JustDance/sources/top_level.sv"] \
 ]
 add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
-set file "$origin_dir/../JD Files/sources/camera_read.sv"
+set file "$origin_dir/../JustDance/sources/camera_read.sv"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-set file "$origin_dir/../JD Files/sources/top_level.sv"
+set file "$origin_dir/../JustDance/sources/top_level.sv"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
@@ -160,9 +160,9 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 set obj [get_filesets constrs_1]
 
 # Add/Import constrs file and set constrs file properties
-set file "[file normalize "$origin_dir/../JD Files/xdc/ddr.xdc"]"
+set file "[file normalize "$origin_dir/../JustDance/xdc/ddr.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
-set file "$origin_dir/../JD Files/xdc/ddr.xdc"
+set file "$origin_dir/../JustDance/xdc/ddr.xdc"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
