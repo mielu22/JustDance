@@ -31,8 +31,9 @@ module top_level(
    );
     logic clk_65mhz;
     // create 65mhz system clock, happens to match 1024 x 768 XVGA timing
-    clk_wiz_lab3 clkdivider(.clk_in1(clk_100mhz), .clk_out1(clk_65mhz));
-
+    clk_wiz_0 clkdivider(.clk_in1(clk_100mhz), .clk_out1(clk_65mhz));
+            //made an IP instance instead of copying from lab 3 --> hopefully I won't regret this...
+            
     wire [31:0] data;      //  instantiate 7-segment display; display (8) 4-bit hex
     wire [6:0] segments;
     assign {cg, cf, ce, cd, cc, cb, ca} = segments[6:0];
