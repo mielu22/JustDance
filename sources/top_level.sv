@@ -67,24 +67,20 @@ module top_level(
     logic xclk;
     logic[1:0] xclk_count;
     
-    logic pclk_buff, pclk_in;
+    logic pclk_buff, pclk_in; //for camera and BRAM
     logic vsync_buff, vsync_in;
     logic href_buff, href_in;
     logic[7:0] pixel_buff, pixel_in;
     
     logic [11:0] cam;
-    logic [11:0] frame_buff_out;
     logic [15:0] output_pixels;
     logic [15:0] old_output_pixels;
-    logic [12:0] processed_pixels;
     logic [3:0] red_diff;
     logic [3:0] green_diff;
     logic [3:0] blue_diff;
-    logic valid_pixel;
     logic frame_done_out;
     
-    logic [16:0] pixel_addr_in;
-    logic [16:0] pixel_addr_out;
+
     
     assign xclk = (xclk_count >2'b01);
     assign jbclk = xclk;
@@ -94,15 +90,20 @@ module top_level(
     assign green_diff = (output_pixels[10:7]>old_output_pixels[10:7])?output_pixels[10:7]-old_output_pixels[10:7]:old_output_pixels[10:7]-output_pixels[10:7];
     assign blue_diff = (output_pixels[4:1]>old_output_pixels[4:1])?output_pixels[4:1]-old_output_pixels[4:1]:old_output_pixels[4:1]-output_pixels[4:1];
 
-    
-    
-    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in), 
-                             .clka(pclk_in),
-                             .dina(processed_pixels),
-                             .wea(valid_pixel),
-                             .addrb(pixel_addr_out),
-                             .clkb(clk_65mhz),
-                             .doutb(frame_buff_out));
+
+    logic [16:0] pixel_addr_in;    
+    logic [12:0] processed_pixels;
+    logic valid_pixel;
+    logic [16:0] pixel_addr_out;
+    logic [11:0] frame_buff_out;
+        
+    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
+                             .clka(pclk_in),             // 
+                             .dina(processed_pixels),    // ....
+                             .wea(valid_pixel),          // ....
+                             .addrb(pixel_addr_out),     // ....
+                             .clkb(clk_65mhz),           // ....
+                             .doutb(frame_buff_out));    // ....
     
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
