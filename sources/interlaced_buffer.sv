@@ -15,11 +15,9 @@ module interlaced_buffer(
     
     /* ASSUME read_addr DOES GO IN CONSECUTIVE ORDER */
 
-/*        
     blk_mem_gen_0 aram(.addra(addra),.clka(clk),.dina(pixel_in),.wea(writea),.addrb(reada),.clkb(clk),.doutb(dataa));
     blk_mem_gen_0 bram(.addra(addrb),.clka(clk),.dina(pixel_in),.wea(writeb),.addrb(readb),.clkb(clk),.doutb(datab));
     blk_mem_gen_0 cram(.addra(addrc),.clka(clk),.dina(pixel_in),.wea(writec),.addrb(readc),.clkb(clk),.doutb(datac));
-*/
     
     logic [16:0] write_addr; //76,800 = 1 frame but 
     logic [16:0] addra; // 0->319, 961->
