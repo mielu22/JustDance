@@ -96,7 +96,14 @@ module top_level(
     logic valid_pixel;
     logic [16:0] pixel_addr_out;
     logic [11:0] frame_buff_out;
+    
+    logic pixel_bit;
+    logic pix_out;
+    
+    assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
+    interlaced_buffer stream(.clk(pclk_in), .reset(reset), .read_addr(pixel_addr_in), .pixel_in(pixel_bit), .pixel_out(pix_out));
+    
     blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
                              .clka(pclk_in),             // 
                              .dina(processed_pixels),    // ....
@@ -104,6 +111,7 @@ module top_level(
                              .addrb(pixel_addr_out),     // ....
                              .clkb(clk_65mhz),           // ....
                              .doutb(frame_buff_out));    // ....
+                             
     
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
@@ -151,7 +159,8 @@ module top_level(
             
     end
     assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
-    assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
+    //assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
+    assign cam = sw[2]&&((hcount<640)&&(vcount<480)) ? {5'b00000, pix_out, 6'b000000} : ~sw[2]&&((hcount<320)&&(vcount<240)) ? {5'b00000, pix_out, 6'b000000} : 12'hFFF;
 
     ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 
                                         .probe1(pclk_in), 
