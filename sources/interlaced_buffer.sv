@@ -111,9 +111,9 @@ module interlaced_buffer(
             
             // READING --> just deal with reading addresses for now
             
-            if (read_addr >= 76799 && frame == 2) begin //WARNING: not needed if frame is input
-                frame <= frame + 1;
-                chunk <= 0;
+            if (read_addr >= 76799) begin //WARNING: not needed if frame is input
+                frame <= (frame == 2) ? 0 : frame + 1;
+                chunk <= (frame == 2) ? 0 : chunk + 1;
                 index <= 0;
             end else if (read_addr % 320 == 319) begin
                 index <= 0;

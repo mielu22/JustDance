@@ -45,7 +45,7 @@ module drawing_logic(
 
 // rescaler module not currently being used
 //    rescaler resize_truth(.input_img(truth_image), .output_img(resized_truth_image));
-    recolor user_recolor (.clk(clk_in), .isUser(1), .input_img(user_extraction), .output_img(recolored_user_image));
+    recolor user_recolor (.clk(clk_in), .isUser(1), .input_pixel(user_extraction), .output_pixel(recolored_user_image));
     alpha_blending merged_image (.image_1(truth_pixel), .image_2(recolored_user_image), .blend_factor(alpha_in), .blended(blended_image));
 //    alpha_blending merged_image (.image_1(resized_truth_image), .image_2(recolored_user_image), .blend_factor(alpha_in), .blended(blended_image));
 
