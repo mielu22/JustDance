@@ -111,11 +111,8 @@ module top_level(
                              .addrb(pixel_addr_out),
                              .clkb(clk_65mhz),
                              .doutb(frame_buff_out));
-    
-    /*
-    rgb2hsv converter(.clock(clk_100mhz), .reset(reset), .r(), .g(), .b(), .h(), .s(), .v())
-    */                         
-    
+
+
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
             pixel_addr_in <= 17'b0;  
