@@ -104,14 +104,17 @@ module top_level(
         
     interlaced_buffer stream(.clk(pclk_in), .reset(reset), .read_addr(pixel_addr_in), .pixel_in(pixel_bit), .pixel_out(pix_out));
     
-    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
-                             .clka(pclk_in),             // 
-                             .dina(processed_pixels),    // ....
-                             .wea(valid_pixel),          // ....
-                             .addrb(pixel_addr_out),     // ....
-                             .clkb(clk_65mhz),           // ....
-                             .doutb(frame_buff_out));    // ....
-                             
+    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),
+                             .clka(pclk_in), 
+                             .dina(processed_pixels),
+                             .wea(valid_pixel),
+                             .addrb(pixel_addr_out),
+                             .clkb(clk_65mhz),
+                             .doutb(frame_buff_out));
+    
+    /*
+    rgb2hsv converter(.clock(clk_100mhz), .reset(reset), .r(), .g(), .b(), .h(), .s(), .v())
+    */                         
     
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
@@ -162,12 +165,13 @@ module top_level(
     //assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
     assign cam = sw[2]&&((hcount<640)&&(vcount<480)) ? {5'b00000, pix_out, 6'b000000} : ~sw[2]&&((hcount<320)&&(vcount<240)) ? {5'b00000, pix_out, 6'b000000} : 12'hFFF;
 
+/*
     ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 
                                         .probe1(pclk_in), 
                                         .probe2(vsync_in),
                                         .probe3(href_in),
                                         .probe4(jbclk));
-
+*/
 
     camera_read  my_camera(.p_clock_in(pclk_in),
                           .vsync_in(vsync_in),

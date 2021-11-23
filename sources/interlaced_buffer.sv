@@ -6,15 +6,14 @@ module interlaced_buffer(
     input wire clk, //perhaps have write share camera clock and have read be 100MHz?
     input wire reset,
     input wire [16:0] read_addr, //should only go 0->76799
-    input wire pixel_in,
+    input wire [23:0] pixel_in,
     //input wire frame, //delay in top_level before it tries to read camera --> counts frames for this to use to keep track
     //output logic [8:0] kernel_out, //since the whole point of 3 BRAMS is to do synchronous retrieval
     // output logic ready, //when a out has been filled and is ready to transfer to kernel_out
-    output logic pixel_out
+    output logic [23:0] pixel_out
     );
     
     /* ASSUME read_addr DOES GO IN CONSECUTIVE ORDER */
-
     blk_mem_gen_0 aram(.addra(addra),.clka(clk),.dina(pixel_in),.wea(writea),.addrb(reada),.clkb(clk),.doutb(dataa));
     blk_mem_gen_0 bram(.addra(addrb),.clka(clk),.dina(pixel_in),.wea(writeb),.addrb(readb),.clkb(clk),.doutb(datab));
     blk_mem_gen_0 cram(.addra(addrc),.clka(clk),.dina(pixel_in),.wea(writec),.addrb(readc),.clkb(clk),.doutb(datac));
@@ -29,8 +28,8 @@ module interlaced_buffer(
     logic [1:0] state;
 
     logic [1:0] frame; //so we know which "row" to read from (since each BRAM holds 1/3 for a total of 3 frames)
-    logic [2:0] segment; //3x1 for a kernel
-    logic [8:0] kernel; //transfers to kernel_out eventually
+//    logic [2:0] segment; //3x1 for a kernel
+    logic [8:0] [23:0] kernel; //transfers to kernel_out eventually
     logic ready;
     logic [7:0] chunk; //since each frame had 240 chunks of 320 bits
     logic [8:0] index; //cycles through for each line
@@ -39,9 +38,9 @@ module interlaced_buffer(
     logic [16:0] readc;
     logic [1:0] status;
     
-    logic dataa; //bits returned
-    logic datab;
-    logic datac;
+    logic [23:0] dataa; //bits returned
+    logic [23:0] datab;
+    logic [23:0] datac;
 
     
     
