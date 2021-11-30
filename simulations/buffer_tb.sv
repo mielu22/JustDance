@@ -1,0 +1,74 @@
+`timescale 1ns / 1ps
+////////////////////////////////////////////////////////////////////////////////
+
+module buffer_tb;
+
+   // Inputs
+   logic clk;
+   logic reset;
+   logic [16:0] read_addr;
+   logic [23:0] pixel_in;
+
+   // Outputs
+   logic [23:0] pixel_out;
+
+   // Instantiate the Unit Under Test (UUT)
+   interlaced_buffer uut (
+      .clk(clk), 
+      .reset(reset), 
+      .read_addr(read_addr),
+      .pixel_in(pixel_in),
+      .pixel_out(pixel_out)
+   );
+   
+   //extras
+   logic [16:0] meta_addr;
+   logic read_ready;
+
+   always #5 clk = !clk;
+   
+   initial begin
+      // Initialize Inputs
+      clk = 0;
+      reset = 1;
+      // Wait 100 ns for global reset to finish
+      #100;
+      reset = 0;
+      $display("BEGIN SIMULATION");
+              
+      // Add stimulus here
+      if (read_addr == 76799) $display("read through a frame");
+   end
+   
+   always_ff @ (posedge clk) begin
+      if (reset) begin
+        meta_addr <= 0;
+        read_ready <= 0;
+        read_addr <= 0;
+      end else begin
+        meta_addr <= (meta_addr < 76799) ? meta_addr + 1 : 0;
+        if (meta_addr < 25600) begin
+            pixel_in <= 24'hFF0000;
+        end else if (meta_addr < 51200) begin
+            pixel_in <= 24'h00FF00;
+            read_ready <= 1;
+        end else begin
+            pixel_in <= 24'h0000FF;
+        end
+        
+        /*
+        if (read_ready) begin
+            read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
+            if (read_addr >= 5 && read_addr < 25606) begin
+                assert(pixel_out == 24'hFF0000) else $display("missed the 1st bar");
+            end else if (read_addr < 51206) begin
+                assert(pixel_out == 24'h00FF00) else $display("missed the 2nd bar");
+            end else begin
+                assert(pixel_out == 24'h0000FF) else $display("missed the 3rd bar");
+            end
+        end
+        */
+      end
+   end
+      
+endmodule
