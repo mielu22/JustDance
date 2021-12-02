@@ -20,10 +20,10 @@ module interlaced_buffer(
     blk_mem_gen_0 bram(.addra(addrb),.clka(clk),.dina(pixel_in),.wea(writeb),.addrb(readb),.clkb(clk),.doutb(datab));
     blk_mem_gen_0 cram(.addra(addrc),.clka(clk),.dina(pixel_in),.wea(writec),.addrb(readc),.clkb(clk),.doutb(datac));
     
-    logic [16:0] write_addr; //76,800 = 1 frame but 
-    logic [16:0] addra; // 0->319, 961->
+    logic [16:0] write_addr; //76,800 = 1 frame
+    logic [16:0] addra; // 0->319, 960->
     logic [16:0] addrb; // 320->639
-    logic [16:0] addrc;
+    logic [16:0] addrc; // 640->959
     logic writea; //determines which buffer to write into
     logic writeb;
     logic writec;
@@ -33,14 +33,14 @@ module interlaced_buffer(
 //    logic [2:0] segment; //3x1 for a kernel
     logic [8:0] [23:0] kernel; //transfers to kernel_out eventually
     logic ready;
-    logic [7:0] chunk; //since each frame had 240 chunks of 320 bits
+    logic [7:0] chunk; //since each frame had 240 lines of 320 pixels
     logic [8:0] index; //cycles through for each line
     logic [16:0] reada; //internal addresses
     logic [16:0] readb;
     logic [16:0] readc;
     logic [1:0] status;
     
-    logic [23:0] dataa; //bits returned
+    logic [23:0] dataa; //pixels returned
     logic [23:0] datab;
     logic [23:0] datac;
 
@@ -70,8 +70,9 @@ module interlaced_buffer(
             // WRITING
             if (write_addr >= X*3*THIRD_OF_Y - 1) begin
                 write_addr <= 0;
-            end 
-            write_addr <= write_addr + 1;
+            end else begin
+                write_addr <= write_addr + 1;
+            end
             case (state)
                 0: begin
                     if (addra >= X*3*THIRD_OF_Y - 1) begin
@@ -111,11 +112,11 @@ module interlaced_buffer(
                 end
             endcase
             
-            // READING --> just deal with reading addresses for now
+            // READING --> just deal with reading single addresses for now
             
             if (read_addr >= X*3*THIRD_OF_Y - 1) begin //WARNING: not needed if frame is input
                 frame <= (frame >= 2) ? 0 : frame + 1;
-                chunk <= (chunk >= 79) ? 0 : chunk + 1;
+                chunk <= (chunk >= THIRD_OF_Y - 1) ? 0 : chunk + 1;
                 index <= 0;
             end else if (read_addr%X == X - 1) begin
                 index <= 0;
