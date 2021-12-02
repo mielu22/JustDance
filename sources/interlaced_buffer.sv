@@ -12,6 +12,8 @@ module interlaced_buffer(
     // output logic ready, //when a out has been filled and is ready to transfer to kernel_out
     output logic [23:0] pixel_out
     );
+    parameter X = 320;
+    parameter THIRD_OF_Y = 80;
     
     /* ASSUME read_addr DOES GO IN CONSECUTIVE ORDER */
     blk_mem_gen_0 aram(.addra(addra),.clka(clk),.dina(pixel_in),.wea(writea),.addrb(reada),.clkb(clk),.doutb(dataa));
@@ -66,42 +68,42 @@ module interlaced_buffer(
             status <= 0;
         end else begin
             // WRITING
-            if (write_addr >= 76799) begin
+            if (write_addr >= X*3*THIRD_OF_Y - 1) begin
                 write_addr <= 0;
             end 
             write_addr <= write_addr + 1;
             case (state)
                 0: begin
-                    if (addra >= 75999) begin
+                    if (addra >= X*3*THIRD_OF_Y - 1) begin
                         addra <= 0;
                     end else begin
                         addra <= addra + 1;
                     end
-                    if (write_addr%320 == 319) begin
+                    if (write_addr%X == X - 1) begin
                         state <= 1;
                         writea <= 0;
                         writeb <= 1;
                     end
                 end
                 1: begin
-                    if (addrb >= 75999) begin
+                    if (addrb >= X*3*THIRD_OF_Y - 1) begin
                         addrb <= 0;
                     end else begin
                         addrb <= addrb + 1;
                     end
-                    if (write_addr%320 == 319) begin
+                    if (write_addr%X == X - 1) begin
                         state <= 2;
                         writeb <= 0;
                         writec <= 1;
                     end
                 end
                 2: begin
-                    if (addrc >= 75999) begin
+                    if (addrc >= X*3*THIRD_OF_Y - 1) begin
                         addrc <= 0;
                     end else begin
                         addrc <= addrc + 1;
                     end
-                    if (write_addr%320 == 319) begin
+                    if (write_addr%X == X - 1) begin
                         state <= 0;
                         writec <= 0;
                         writea <= 1;
@@ -111,32 +113,32 @@ module interlaced_buffer(
             
             // READING --> just deal with reading addresses for now
             
-            if (read_addr >= 76799) begin //WARNING: not needed if frame is input
-                frame <= (frame == 2) ? 0 : frame + 1;
-                chunk <= (frame == 2) ? 0 : chunk + 1;
+            if (read_addr >= X*3*THIRD_OF_Y - 1) begin //WARNING: not needed if frame is input
+                frame <= (frame >= 2) ? 0 : frame + 1;
+                chunk <= (chunk >= 79) ? 0 : chunk + 1;
                 index <= 0;
-            end else if (read_addr % 320 == 319) begin
+            end else if (read_addr%X == X - 1) begin
                 index <= 0;
-                chunk <= (read_addr % 960 == 959) ? chunk + 1 : chunk;
+                chunk <= (read_addr%(3*X) == 3*X - 1) ? chunk + 1 : chunk;
             end else index <= index + 1;
             
             
-            if (read_addr % 960 <= 319) begin          // center is in A FRAME
+            if (read_addr %(3*X) <= X - 1) begin          // center is in A FRAME
                          //invalid on top edge
                 //readc <= (read_addr < 320) ? 0 : 320*80*frame + 320*(chunk-1) + index;
-                reada <= 320*80*frame + chunk*320 + index;
+                reada <= X*THIRD_OF_Y*frame + chunk*X + index;
                 //readb <= 320*80*frame + chunk*320 + index;
                 pixel_out <= dataa;
             
-            end else if (read_addr % 960 <= 639) begin // center is in B FRAME
+            end else if (read_addr%(3*X) <= 2*X - 1) begin // center is in B FRAME
                 //reada <= 320*80*frame + chunk*320 + index;
-                readb <= 320*80*frame + chunk*320 + index;
+                readb <= X*THIRD_OF_Y*frame + chunk*X + index;
                 //readc <= 320*80*frame + chunk*320 + index;
                 pixel_out <= datab;
             
             end else begin                             // center is in C FRAME
                 //readb <= 320*80*frame + chunk*320 + index;
-                readc <= 320*80*frame + chunk*320 + index;
+                readc <= X*THIRD_OF_Y*frame + chunk*X + index;
                           //invalid on bottom edge
                 //reada <= (read_addr >= 76480) ? 0 : 320*80*frame + 320*(chunk+1) + index;
                 pixel_out <= datac;
