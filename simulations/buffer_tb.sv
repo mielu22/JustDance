@@ -7,10 +7,10 @@ module buffer_tb;
    logic clk;
    logic reset;
    logic [16:0] read_addr;
-   logic [23:0] pixel_in;
+   logic pixel_in;
 
    // Outputs
-   logic [23:0] pixel_out;
+   logic pixel_out;
 
    // Instantiate the Unit Under Test (UUT)
    interlaced_buffer uut (
@@ -47,17 +47,18 @@ module buffer_tb;
         read_addr <= 0;
       end else begin
         input_addr <= (input_addr < 76799) ? input_addr + 1 : 0;
-        if (input_addr < 25600) begin
-            pixel_in <= 24'hFF0000;
-        end else if (input_addr < 51200) begin
-            pixel_in <= 24'h00FF00;
-            read_ready <= 1;
-        end else begin
-            pixel_in <= 24'h0000FF;
+        pixel_in <= (input_addr < 38400) ? 0 : 1;
+        
+        if (input_addr > 25600) read_ready <= 1;
+        if (read_ready) read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
+
+        /*
+        if (input_addr < 38400) begin
+            pixel_in <= 0;
+        end else 
+            pixel_in <= 1;
         end
         
-        if (read_ready) read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
-        /*
         if (read_ready) begin
             read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
             if (read_addr >= 5 && read_addr < 25606) begin
