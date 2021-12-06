@@ -8,6 +8,7 @@ module buffer_tb;
    logic reset;
    logic [16:0] read_addr;
    logic pixel_in;
+   logic reading;
 
    // Outputs
    logic pixel_out;
@@ -17,13 +18,13 @@ module buffer_tb;
       .clk(clk), 
       .reset(reset), 
       .read_addr(read_addr),
+      .reading(reading),
       .pixel_in(pixel_in),
       .pixel_out(pixel_out)
    );
    
    //extras
    logic [16:0] input_addr;
-   logic read_ready;
 
    always #5 clk = !clk;
    
@@ -43,14 +44,14 @@ module buffer_tb;
    always_ff @ (posedge clk) begin
       if (reset) begin
         input_addr <= 0;
-        read_ready <= 0;
+        reading <= 0;
         read_addr <= 0;
       end else begin
         input_addr <= (input_addr < 76799) ? input_addr + 1 : 0;
         pixel_in <= (input_addr < 38400) ? 0 : 1;
         
-        if (input_addr > 25600) read_ready <= 1;
-        if (read_ready) read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
+        if (input_addr > 25600) reading <= 1;
+        if (reading) read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
 
         /*
         if (input_addr < 38400) begin
@@ -59,7 +60,7 @@ module buffer_tb;
             pixel_in <= 1;
         end
         
-        if (read_ready) begin
+        if (reading) begin
             read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;
             if (read_addr >= 5 && read_addr < 25606) begin
                 assert(pixel_out == 24'hFF0000) else $display("missed the 1st bar");
