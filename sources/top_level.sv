@@ -97,28 +97,41 @@ module top_level(
     logic [16:0] pixel_addr_out;
     logic [11:0] frame_buff_out;
     
-    logic [23:0] pixel_bit;
-    logic [23:0] pix_out;
-    logic [11:0] end_image;
+    logic reading;
+    logic pixel_bit;
+    logic pix_out;
     
-    assign pixel_bit = output_pixels;
+    user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
+    // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
-    interlaced_buffer stream(.clk(pclk_in), .reset(reset), .read_addr(pixel_addr_in), .pixel_in(pixel_bit), .pixel_out(pix_out));
-    drawing_logic try(.clk_in(pclk_in), .user_extraction(pix_out), .alpha_in(sw[10:8]), .truth_image(12'b0), .hcount_in(hcount), .vcount_in(vcount), .pixel_out(end_image));
+    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
+
+//    drawing_logic art(.clk_in(), .alpha_in(), .truth);
 
 /*    
-    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),
-                             .clka(pclk_in), 
-                             .dina(processed_pixels),
-                             .wea(valid_pixel),
-                             .addrb(pixel_addr_out),
-                             .clkb(clk_65mhz),
-                             .doutb(frame_buff_out));
-*/
+module drawing_logic(
+    input wire clk_in,
+    input wire [2:0] alpha_in,
+    input wire [11:0] truth_image,
+    input wire pixel_in,         // from [23:0] user_extraction to single bit read from buffer 
+    input wire [10:0] hcount_in, // horizontal index of current pixel  
+    input wire [9:0]  vcount_in, // vertical index of current pixel
+    output logic [11:0] pixel_out 
+);  
 
+    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
+                             .clka(pclk_in),             // 
+                             .dina(processed_pixels),    // ....
+                             .wea(valid_pixel),          // ....
+                             .addrb(pixel_addr_out),     // ....
+                             .clkb(clk_65mhz),           // ....
+                             .doutb(frame_buff_out));    // ....
+*/                             
+    
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
-            pixel_addr_in <= 17'b0;  
+            pixel_addr_in <= 17'b0;
+            reading <= 1;  
         end else if (valid_pixel)begin
             pixel_addr_in <= pixel_addr_in +1;  
         end
@@ -163,7 +176,7 @@ module top_level(
     end
     assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
     //assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
-    assign cam = (sw[12]) ? processed_pixels : end_image; //sw[2]&&((hcount<640)&&(vcount<480)) ? pix_out[23:12] : ~sw[2]&&((hcount<320)&&(vcount<240)) ?  pix_out[23:12] : 12'hFFF;
+    assign cam = sw[2]&&((hcount<640)&&(vcount<480)) ? {5'b00000, pix_out, 6'b000000} : ~sw[2]&&((hcount<320)&&(vcount<240)) ? {5'b00000, pix_out, 6'b000000} : 12'hFFF;
 
 /*
     ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 
@@ -473,5 +486,3 @@ module xvga(input vclock_in,
    end
    
 endmodule
-
-

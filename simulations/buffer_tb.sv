@@ -48,7 +48,7 @@ module buffer_tb;
         read_addr <= 0;
       end else begin
         input_addr <= (input_addr < 76799) ? input_addr + 1 : 0;
-        pixel_in <= (input_addr < 38400) ? 0 : 1;
+        pixel_in <= (input_addr%640 < 320) ? 0 : 1; //stripes of lines
         
         if (input_addr > 25600) reading <= 1;
         if (reading) read_addr <= (read_addr < 76799) ? read_addr + 1 : 0;

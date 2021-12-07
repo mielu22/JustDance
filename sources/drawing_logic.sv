@@ -24,7 +24,7 @@ module drawing_logic(
     input wire clk_in,
     input wire [2:0] alpha_in,
     input wire [11:0] truth_image,
-    input wire [23:0] user_extraction,
+    input wire pixel_in,         // from [23:0] user_extraction to single bit read from buffer 
     input wire [10:0] hcount_in, // horizontal index of current pixel  
     input wire [9:0]  vcount_in, // vertical index of current pixel
     output logic [11:0] pixel_out 
@@ -45,7 +45,7 @@ module drawing_logic(
 
 // rescaler module not currently being used
 //    rescaler resize_truth(.input_img(truth_image), .output_img(resized_truth_image));
-    recolor user_recolor (.clk(clk_in), .isUser(1), .input_pixel(user_extraction), .output_pixel(recolored_user_image));
+    recolor user_recolor (.clk(clk_in), .isUser(1), .input_pixel(pixel_in), .output_pixel(recolored_user_image));
     alpha_blending merged_image (.image_1(truth_pixel), .image_2(recolored_user_image), .blend_factor(alpha_in), .blended(blended_image));
 //    alpha_blending merged_image (.image_1(resized_truth_image), .image_2(recolored_user_image), .blend_factor(alpha_in), .blended(blended_image));
 
