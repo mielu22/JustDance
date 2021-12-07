@@ -100,7 +100,8 @@ module top_level(
     logic pixel_bit;
     logic pix_out;
     
-    assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
+    user_extraction extractor(.pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
+    // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
     interlaced_buffer stream(.clk(pclk_in), .reset(reset), .read_addr(pixel_addr_in), .pixel_in(pixel_bit), .pixel_out(pix_out));
     
