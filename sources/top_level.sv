@@ -102,12 +102,12 @@ module top_level(
     logic pix_out;
     logic [11:0] end_image;
     
-//    user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
+    user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
     // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
-//    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
+    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
 
-    drawing_logic art(.clk_in(pclk_in),.alpha_in(sw[10:8]),.truth_image(12'b0),.pixel_in(output_pixels),.hcount_in(hcount),.vcount_in(vcount),.pixel_out(end_image));
+    drawing_logic art(.clk_in(pclk_in),.alpha_in(sw[10:8]),.truth_image(12'b0),.pixel_in(pix_out),.hcount_in(hcount),.vcount_in(vcount),.pixel_out(end_image));
 
 /*    
     blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....

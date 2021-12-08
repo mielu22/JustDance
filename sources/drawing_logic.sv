@@ -24,7 +24,7 @@ module drawing_logic(
     input wire clk_in,
     input wire [2:0] alpha_in,
     input wire [11:0] truth_image,
-    input wire [15:0] pixel_in,         // from [23:0] user_extraction to single bit read from buffer 
+    input wire pixel_in,         // from [23:0] user_extraction to single bit read from buffer 
     input wire [10:0] hcount_in, // horizontal index of current pixel  
     input wire [9:0]  vcount_in, // vertical index of current pixel
     output logic [11:0] pixel_out 
@@ -61,7 +61,7 @@ endmodule // drawing logic
 ///////////////////////////////////////////////////////////////////////////////////
 module recolor(
     input wire clk,
-    input wire [15:0] input_pixel,
+    input wire input_pixel,
     input wire isUser,
     output logic [11:0] output_pixel
 );
@@ -70,9 +70,7 @@ module recolor(
     
 
     always_ff @(posedge clk) begin
-        $display("value of input is");
-        $display(input_pixel);
-        if (input_pixel[10:5] > 48) begin
+        if (input_pixel == 1) begin
             if (isUser) begin // convert to rgb green
                 temp[3:0] <= 4'b0; // red to 0
                 temp[7:4] <= 4'b1111; // green to max value
