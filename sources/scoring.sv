@@ -25,11 +25,13 @@ module scoring(
             case (state)
                 0: begin //counting
                     if (pixel != 12'h000 || pixel != 12'h0F0 || pixel != 12'hFFF) count <= count + 1;
+                        //not black, green, or white means overlap which means points
                     if (count == 15) state <= 1;
                 end
                 1: begin
                     points <= points + 1;
                     count <= 0;
+                    state <= 0;
                     if (update) state <= 2;
                 end
                 2: begin 
