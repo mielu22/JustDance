@@ -42,7 +42,7 @@ module top_level(
     assign  dp = 1'b1;  // turn off the period
 
     assign led = sw;                        // turn leds on
-    assign data = {28'h0123456, sw[3:0]};   // display 0123456 + sw[3:0]
+//    assign data = {28'h0123456, sw[3:0]};   // display 0123456 + sw[3:0]
     assign led16_r = btnl;                  // left button -> red led
     assign led16_g = btnc;                  // center button -> green led
     assign led16_b = btnr;                  // right button -> blue led
@@ -119,22 +119,42 @@ module top_level(
                              .doutb(frame_buff_out));    // ....
 */                             
     
+
+
+// ~ RELEVANT TO SCORING ~
+    logic counting;
+    logic update;
+    logic [31:0] old_score;
+    logic [4:0] frames; //30 fps
+    scoring total(.clk(pclk_in),.reset(reset),.pixel(end_image),.counting(counting),.update(update),.out(data));
+    
     always_ff @(posedge pclk_in)begin
-        if (hcount + vcount*320 >= 76799) begin
+        if (reset) begin
+            counting <= 0;
+            update <= 0;
+            frames <= 0;
+        end
+        
+        if (hcount + vcount*320 == 76799) begin
+            frames <= frames + 1;
+            update <= (frames == 5'b11111) ? 1 : 0;
+        end else if (hcount + vcount*320 > 76799) begin
             pixel_addr_in <= 0;
             reading <= 1; //wait to load 1 frame before reading
+            update <= 0;
+            if (data != old_score) begin
+                old_score <= data;
+                counting <= 0;
+            end
         end else begin
             pixel_addr_in <= hcount + vcount*320;
+            counting <= (frames == 5'b11111) ? 1 : 0; //only scoring last frame
+            update <= 0;
         end
-    /*
-        if (frame_done_out)begin
-            pixel_addr_in <= 17'b0;
-            reading <= 1;  
-        end else if (valid_pixel)begin
-            pixel_addr_in <= pixel_addr_in +1;  
-        end
-    */
     end
+    
+ // ~ RELEVANT TO SCORING ~
+ 
     
     always_ff @(posedge clk_65mhz) begin
         pclk_buff <= jb[0];//WAS JB
