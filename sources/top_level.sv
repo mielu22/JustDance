@@ -32,8 +32,7 @@ module top_level(
     logic clk_65mhz;
     // create 65mhz system clock, happens to match 1024 x 768 XVGA timing
     clk_wiz_lab3 clkdivider(.clk_in1(clk_100mhz), .clk_out1(clk_65mhz));
-            //copy from lab 3
-            
+
     wire [31:0] data;      //  instantiate 7-segment display; display (8) 4-bit hex
     wire [6:0] segments;
     assign {cg, cf, ce, cd, cc, cb, ca} = segments[6:0];
@@ -67,20 +66,25 @@ module top_level(
     logic xclk;
     logic[1:0] xclk_count;
     
-    logic pclk_buff, pclk_in; //for camera and BRAM
+    logic pclk_buff, pclk_in;
     logic vsync_buff, vsync_in;
     logic href_buff, href_in;
     logic[7:0] pixel_buff, pixel_in;
     
     logic [11:0] cam;
+    logic [11:0] frame_buff_out;
+    logic [11:0] end_image;
     logic [15:0] output_pixels;
     logic [15:0] old_output_pixels;
+    logic [12:0] processed_pixels;
     logic [3:0] red_diff;
     logic [3:0] green_diff;
     logic [3:0] blue_diff;
+    logic valid_pixel;
     logic frame_done_out;
     
-
+    logic [16:0] pixel_addr_in;
+    logic [16:0] pixel_addr_out;
     
     assign xclk = (xclk_count >2'b01);
     assign jbclk = xclk;
@@ -90,29 +94,18 @@ module top_level(
     assign green_diff = (output_pixels[10:7]>old_output_pixels[10:7])?output_pixels[10:7]-old_output_pixels[10:7]:old_output_pixels[10:7]-output_pixels[10:7];
     assign blue_diff = (output_pixels[4:1]>old_output_pixels[4:1])?output_pixels[4:1]-old_output_pixels[4:1]:old_output_pixels[4:1]-output_pixels[4:1];
 
-
-    logic [16:0] pixel_addr_in;    
-    logic [12:0] processed_pixels;
-    logic valid_pixel;
-    logic [16:0] pixel_addr_out;
-    logic [11:0] frame_buff_out;
     
-    logic pixel_bit;
-    logic pix_out;
     
-    user_extraction extractor(.pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
-    // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
-        
-    interlaced_buffer stream(.clk(pclk_in), .reset(reset), .read_addr(pixel_addr_in), .pixel_in(pixel_bit), .pixel_out(pix_out));
-    
-    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
-                             .clka(pclk_in),             // 
-                             .dina(processed_pixels),    // ....
-                             .wea(valid_pixel),          // ....
-                             .addrb(pixel_addr_out),     // ....
-                             .clkb(clk_65mhz),           // ....
-                             .doutb(frame_buff_out));    // ....
+    blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in), 
+                             .clka(pclk_in),
+                             .dina(processed_pixels),
+                             .wea(valid_pixel),
+                             .addrb(pixel_addr_out),
+                             .clkb(clk_65mhz),
+                             .doutb(frame_buff_out));
                              
+   drawing_logic art(.clk_in(pclk_in),.alpha_in(3'b101),.user_extraction(cam),.hcount_in(hcount),.vcount_in(vcount),.pixel_out(end_image));
+
     
     always_ff @(posedge pclk_in)begin
         if (frame_done_out)begin
@@ -133,44 +126,39 @@ module top_level(
         pixel_in <= pixel_buff;
         old_output_pixels <= output_pixels;
         xclk_count <= xclk_count + 2'b01;
-        if (sw[3])begin
-            //processed_pixels <= {red_diff<<2, green_diff<<2, blue_diff<<2};
-            processed_pixels <= output_pixels - old_output_pixels;
-        end else if (sw[4]) begin
-            if ((output_pixels[15:12]>4'b1000)&&(output_pixels[10:7]<4'b1000)&&(output_pixels[4:1]<4'b1000))begin
-                processed_pixels <= 12'hF00;
-            end else begin
-                processed_pixels <= 12'h000;
-            end
-        end else if (sw[5]) begin
+//        if (sw[3])begin
+//            //processed_pixels <= {red_diff<<2, green_diff<<2, blue_diff<<2};
+//            processed_pixels <= output_pixels - old_output_pixels;
+//        end else if (sw[4]) begin
+//            if ((output_pixels[15:12]>4'b1000)&&(output_pixels[10:7]<4'b1000)&&(output_pixels[4:1]<4'b1000))begin
+//                processed_pixels <= 12'hF00;
+//            end else begin
+//                processed_pixels <= 12'h000;
+//            end
+//        end else if (sw[5]) begin
+        if (sw[5]) begin
             if ((output_pixels[15:12]<4'b1000)&&(output_pixels[10:7]>4'b1000)&&(output_pixels[4:1]<4'b1000))begin
+                processed_pixels <= 12'h000;
+            end else begin
                 processed_pixels <= 12'h0F0;
-            end else begin
-                processed_pixels <= 12'h000;
-            end
-        end else if (sw[6]) begin
-            if ((output_pixels[15:12]<4'b1000)&&(output_pixels[10:7]<4'b1000)&&(output_pixels[4:1]>4'b1000))begin
-                processed_pixels <= 12'h00F;
-            end else begin
-                processed_pixels <= 12'h000;
             end
         end else begin
             processed_pixels = {output_pixels[15:12],output_pixels[10:7],output_pixels[4:1]};
-        end
-            
+        end 
     end
+    
     assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
-    //assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
-    assign cam = sw[2]&&((hcount<640)&&(vcount<480)) ? {5'b00000, pix_out, 6'b000000} : ~sw[2]&&((hcount<320)&&(vcount<240)) ? {5'b00000, pix_out, 6'b000000} : 12'hFFF;
+    assign cam = sw[2]&&((hcount<640)&&(vcount<480))?frame_buff_out:~sw[2]&&((hcount<320)&&(vcount<240))?frame_buff_out:12'h000;
 
+/*    
     ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 
                                         .probe1(pclk_in), 
                                         .probe2(vsync_in),
                                         .probe3(href_in),
                                         .probe4(jbclk));
-
-
-    camera_read  my_camera(.p_clock_in(pclk_in),
+*/
+                                        
+   camera_read  my_camera(.p_clock_in(pclk_in),
                           .vsync_in(vsync_in),
                           .href_in(href_in),
                           .p_data_in(pixel_in),
@@ -195,24 +183,17 @@ module top_level(
 
     reg b,hs,vs;
     always_ff @(posedge clk_65mhz) begin
-      if (sw[1:0] == 2'b01) begin
+      if (sw[0] == 1'b1) begin
          // 1 pixel outline of visible area (white)
          hs <= hsync;
          vs <= vsync;
          b <= blank;
-         rgb <= {12{border}};
-      end else if (sw[1:0] == 2'b10) begin
-         // color bars
-         hs <= hsync;
-         vs <= vsync;
-         b <= blank;
-         rgb <= {{4{hcount[8]}}, {4{hcount[7]}}, {4{hcount[6]}}} ;
+         rgb <= end_image;
       end else begin
          // default: pong
          hs <= phsync;
          vs <= pvsync;
          b <= pblank;
-         //rgb <= pixel;
          rgb <= cam;
       end
     end
@@ -228,6 +209,129 @@ module top_level(
     assign vga_vs = ~vs;
 
 endmodule
+
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 11/23/2021 08:38:44 AM
+// Design Name: 
+// Module Name: drawing_logic
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+module drawing_logic(
+    input wire clk_in,
+    input wire [2:0] alpha_in,
+    input wire [11:0] truth_image,
+    input wire [11:0] user_extraction,         // from [23:0] user_extraction to single bit read from buffer 
+    input wire [10:0] hcount_in, // horizontal index of current pixel  
+    input wire [9:0]  vcount_in, // vertical index of current pixel
+    output logic [11:0] pixel_out 
+);  
+
+    logic [9:0] truth_y = 80;
+    logic [11:0] truth_x = 90;
+    logic [11:0] truth_pixel;
+    
+    logic [11:0] blended_image;
+    logic [11:0] recolored_user_image;
+    
+    // truth image        
+    picture_blob #(.WIDTH(320), .HEIGHT(240)) 
+        truth_picture (.pixel_clk_in(clk_in), .x_in(truth_x), .y_in(truth_y), .hcount_in(hcount_in),.vcount_in(vcount_in),
+            .pixel_out(truth_pixel));
+
+    alpha_blending merged_image (.image_1(truth_pixel), .image_2(user_extraction), .blend_factor(alpha_in), .blended(blended_image));
+//    assign pixel_out = truth_pixel + user_extraction;
+    assign pixel_out = blended_image; 
+
+endmodule // drawing logic
+
+///////////////////////////////////////////////////////////////////////////////////
+//
+// alpha blending
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+module alpha_blending (
+    input wire [11:0] image_1,
+    input wire [11:0] image_2, 
+    input wire [2:0] blend_factor,
+    output logic [11:0] blended 
+);
+
+    logic [2:0] m = blend_factor;
+    logic [2:0] n = 3'b100 - blend_factor;
+    logic [7:0] temp_val_1;
+    logic [7:0] temp_val_2;
+    logic [7:0] temp_val_3;
+    logic [12:0] temp;
+    
+    always_comb begin
+        temp_val_1 = ((image_1[11:8] * m) >> 2) + ((image_2[11:8] * n) >> 2);
+        temp[11:8] = temp_val_1[3:0];
+        temp_val_2 = ((image_1[7:4] * m) >> 2) + ((image_2[7:4] * n) >> 2);
+        temp[7:4] = temp_val_2[3:0];
+        temp_val_3 = ((image_1[3:0] * m) >> 2) + ((image_2[3:0] * n) >> 2);
+        temp[3:0] = temp_val_3[3:0];
+        
+        if (image_1 && image_2) begin
+            blended = temp;
+        end else begin
+            blended = image_1 | image_2;
+        end
+    end
+
+endmodule //alpha blending
+
+////////////////////////////////////////////////////
+//
+// picture_blob: display a picture
+//
+//////////////////////////////////////////////////
+module picture_blob
+   #(parameter WIDTH = 320,     // default picture width
+               HEIGHT = 240)    // default picture height
+   (input wire pixel_clk_in,
+    input wire [10:0] x_in,hcount_in,
+    input wire [9:0] y_in,vcount_in,
+    output logic [11:0] pixel_out);
+
+   logic [15:0] image_addr;   // num of bits for 320*240 ROM
+   logic [7:0] image_bits, red_mapped, green_mapped, blue_mapped;
+
+   // calculate rom address and read the location
+   assign image_addr = (hcount_in-x_in) + (vcount_in-y_in) * WIDTH;
+   image_rom  rom1(.clka(pixel_clk_in), .addra(image_addr), .douta(image_bits));
+
+   // use color map to create 4 bits R, 4 bits G, 4 bits B
+   // since the image is greyscale, just replicate the red pixels
+   // and not bother with the other two color maps.
+   color_map_coe rcm (.clka(pixel_clk_in), .addra(image_bits), .douta(red_mapped));
+   //green_coe gcm (.clka(pixel_clk_in), .addra(image_bits), .douta(green_mapped));
+   //blue_coe bcm (.clka(pixel_clk_in), .addra(image_bits), .douta(blue_mapped));
+   // note the one clock cycle delay in pixel!
+   always_ff @ (posedge pixel_clk_in) begin
+     if ((hcount_in >= x_in && hcount_in < (x_in+WIDTH)) &&
+          (vcount_in >= y_in && vcount_in < (y_in+HEIGHT)))
+        // use MSB 4 bits
+        pixel_out <= {red_mapped[7:4], red_mapped[7:4], red_mapped[7:4]}; // greyscale
+        //pixel_out <= {red_mapped[7:4], 8h'0}; // only red hues
+        else pixel_out <= 0;
+   end
+endmodule
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
