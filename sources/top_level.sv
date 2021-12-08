@@ -100,25 +100,16 @@ module top_level(
     logic reading;
     logic pixel_bit;
     logic pix_out;
+    logic [11:0] end_image;
     
-    user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
+//    user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
     // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
-    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
+//    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
 
-//    drawing_logic art(.clk_in(), .alpha_in(), .truth);
+    drawing_logic art(.clk_in(pclk_in),.alpha_in(sw[10:8]),.truth_image(12'b0),.pixel_in(output_pixels),.hcount_in(hcount),.vcount_in(vcount),.pixel_out(end_image));
 
 /*    
-module drawing_logic(
-    input wire clk_in,
-    input wire [2:0] alpha_in,
-    input wire [11:0] truth_image,
-    input wire pixel_in,         // from [23:0] user_extraction to single bit read from buffer 
-    input wire [10:0] hcount_in, // horizontal index of current pixel  
-    input wire [9:0]  vcount_in, // vertical index of current pixel
-    output logic [11:0] pixel_out 
-);  
-
     blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
                              .clka(pclk_in),             // 
                              .dina(processed_pixels),    // ....
@@ -129,12 +120,20 @@ module drawing_logic(
 */                             
     
     always_ff @(posedge pclk_in)begin
+        if (hcount + vcount*320 >= 76799) begin
+            pixel_addr_in <= 0;
+            reading <= 1; //wait to load 1 frame before reading
+        end else begin
+            pixel_addr_in <= hcount + vcount*320;
+        end
+    /*
         if (frame_done_out)begin
             pixel_addr_in <= 17'b0;
             reading <= 1;  
         end else if (valid_pixel)begin
             pixel_addr_in <= pixel_addr_in +1;  
         end
+    */
     end
     
     always_ff @(posedge clk_65mhz) begin
@@ -174,9 +173,18 @@ module drawing_logic(
         end
             
     end
+    
     assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
+    logic [2:0] checkerboard;
+    assign checkerboard = hcount[8:6] + vcount[8:6]; //use 3 bits from hcount and vcount to make the checkerboard
+
+   
+
+//   assign pixel_out = {{4{checkerboard[2]}}, {4{checkerboard[1]}}, {4{checkerboard[0]}}} ;
     //assign cam = sw[2]&&((hcount<640) &&  (vcount<480))?frame_buff_out:~sw[2]&&((hcount<320) &&  (vcount<240))?frame_buff_out:12'h000;
-    assign cam = sw[2]&&((hcount<640)&&(vcount<480)) ? {5'b00000, pix_out, 6'b000000} : ~sw[2]&&((hcount<320)&&(vcount<240)) ? {5'b00000, pix_out, 6'b000000} : 12'hFFF;
+    assign cam = (sw[12]) ? end_image : { {4{checkerboard[2]}}, {4{checkerboard[1]}}, {4{checkerboard[0]}} };
+
+    
 
 /*
     ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 

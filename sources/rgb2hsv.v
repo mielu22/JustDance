@@ -59,16 +59,16 @@ module rgb2hsv(clock, reset, r, g, b, h, s, v, hue_valid);
             // note: the "fractional" output was originally named "remainder" in this
         // file -- it seems coregen will name this output "fractional" even if
         // you didn't select the remainder type as fractional.
-        .fractional(s_remainder),
-        .rfd(s_rfd)
+        .remainder(s_remainder),
+        .ready(s_rfd)
         );
         divider hue_div2(
         .clk(clock),
         .dividend(h_top),
         .divisor(h_bottom),
         .quotient(h_quotient),
-        .fractional(h_remainder),
-        .rfd(h_rfd)
+        .remainder(h_remainder),
+        .ready(h_rfd)
         );
         always @ (posedge clock) begin
         
@@ -163,7 +163,7 @@ endmodule
 module divider #(parameter WIDTH = 8)
     (input clk, sign, start,
     input [WIDTH-1:0] dividend,
-    input [WIDTH-1:0] divider,
+    input [WIDTH-1:0] divisor,
     output reg [WIDTH-1:0] quotient,
     output [WIDTH-1:0] remainder,
     output ready
@@ -189,12 +189,12 @@ module divider #(parameter WIDTH = 8)
             dividend_copy = (!sign || !dividend[WIDTH-1]) ?
             {1'b0,zeros,dividend} :
             {1'b0,zeros,~dividend + 1'b1};
-            divider_copy = (!sign || !divider[WIDTH-1]) ?
-            {1'b0,divider,zeros} :
-            {1'b0,~divider + 1'b1,zeros};
+            divider_copy = (!sign || !divisor[WIDTH-1]) ?
+            {1'b0,divisor,zeros} :
+            {1'b0,~divisor + 1'b1,zeros};
             negative_output = sign &&
-            ((divider[WIDTH-1] && !dividend[WIDTH-1])
-            ||(!divider[WIDTH-1] && dividend[WIDTH-1]));
+            ((divisor[WIDTH-1] && !dividend[WIDTH-1])
+            ||(!divisor[WIDTH-1] && dividend[WIDTH-1]));
         end
         else if ( a_bit > 0 ) begin
             diff = dividend_copy - divider_copy;

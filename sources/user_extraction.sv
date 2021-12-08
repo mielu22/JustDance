@@ -36,7 +36,7 @@ module user_extraction (input clk,
     logic is_valid;
     logic frame_over;
 
-    assign pixel = {pixel_in[11:8], 4'b0, pixel_in[7:4], 4'b0, pixel_in[3:0], 4'b0};
+//    assign pixel = {pixel_in[11:8], 4'b0, pixel_in[7:4], 4'b0, pixel_in[3:0], 4'b0};
 
     rgb2hsv converter(.clock(clk), .reset(0), .r(pixel[23:16]), .g(pixel[15:8]), .b(pixel[7:0]), .h(hue), .s(sat),
     .v(val), .hue_valid(is_valid));
@@ -45,7 +45,7 @@ module user_extraction (input clk,
     .thresh_bit(thresh_out), .valid(thresh_valid));
     
     always_ff @(posedge clk) begin
-        pixel <= pixel_in;
+        pixel <= {pixel_in[11:8], 4'b0, pixel_in[7:4], 4'b0, pixel_in[3:0], 4'b0}; // pixel_in;
         if (hcount == 11'd319 && vcount == 10'd239) frame_over <= 1;
         else frame_over <= 0;
     
