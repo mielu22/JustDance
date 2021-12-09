@@ -53,7 +53,7 @@ module top_level(
     wire [10:0] hcount;    // pixel on current line
     wire [9:0] vcount;     // line number
     wire hsync, vsync, blank;
-    wire [11:0] pixel;
+//    wire [11:0] pixel;
     reg [11:0] rgb;    
     xvga xvga1(.vclock_in(clk_65mhz),.hcount_out(hcount),.vcount_out(vcount),
           .hsync_out(hsync),.vsync_out(vsync),.blank_out(blank));
@@ -75,9 +75,9 @@ module top_level(
     logic [11:0] cam;
     logic [15:0] output_pixels;
     logic [15:0] old_output_pixels;
-    logic [3:0] red_diff;
+/*    logic [3:0] red_diff;
     logic [3:0] green_diff;
-    logic [3:0] blue_diff;
+    logic [3:0] blue_diff; */
     logic frame_done_out;
     
 
@@ -85,19 +85,19 @@ module top_level(
     assign xclk = (xclk_count >2'b01);
     assign jbclk = xclk;
     assign jdclk = xclk;
-    
+/*    
     assign red_diff = (output_pixels[15:12]>old_output_pixels[15:12])?output_pixels[15:12]-old_output_pixels[15:12]:old_output_pixels[15:12]-output_pixels[15:12];
     assign green_diff = (output_pixels[10:7]>old_output_pixels[10:7])?output_pixels[10:7]-old_output_pixels[10:7]:old_output_pixels[10:7]-output_pixels[10:7];
     assign blue_diff = (output_pixels[4:1]>old_output_pixels[4:1])?output_pixels[4:1]-old_output_pixels[4:1]:old_output_pixels[4:1]-output_pixels[4:1];
+*/
 
-
-    logic [16:0] pixel_addr_in;    
+//    logic [16:0] pixel_addr_in;    
     logic [12:0] processed_pixels;
     logic valid_pixel;
-    logic [16:0] pixel_addr_out;
+//    logic [16:0] pixel_addr_out;
     logic [11:0] frame_buff_out;
     
-    logic reading;
+//    logic reading;
     logic pixel_bit;
     logic pix_out;
     logic [11:0] end_image;
@@ -105,11 +105,12 @@ module top_level(
     user_extraction extractor(.clk(pclk_in), .pixel_in(output_pixels), .hcount(hcount), .vcount(vcount), .pixel_out(pixel_bit));
     // assign pixel_bit = (processed_pixels == 0) ? 0 : 1;
         
-    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
 
     drawing_logic art(.clk_in(pclk_in),.alpha_in(sw[10:8]),.truth_image(12'b0),.pixel_in(pix_out),.hcount_in(hcount),.vcount_in(vcount),.pixel_out(end_image));
 
 /*    
+    interlaced_buffer stream(.clk(pclk_in),.reset(reset),.read_addr(pixel_addr_in),.pixel_in(pixel_bit),.reading(reading),.pixel_out(pix_out));
+
     blk_mem_gen_0 jojos_bram(.addra(pixel_addr_in),      // ....
                              .clka(pclk_in),             // 
                              .dina(processed_pixels),    // ....
@@ -126,6 +127,7 @@ module top_level(
     logic update;
     logic [31:0] old_score;
     logic [4:0] frames; //30 fps
+    
     scoring total(.clk(pclk_in),.reset(reset),.pixel(end_image),.counting(counting),.update(update),.out(data));
     
     always_ff @(posedge pclk_in)begin
@@ -133,21 +135,19 @@ module top_level(
             counting <= 0;
             update <= 0;
             frames <= 0;
-        end
-        
-        if (hcount + vcount*320 == 76799) begin
+        end else if (hcount + vcount*320 == 76799) begin
             frames <= frames + 1;
             update <= (frames == 5'b11111) ? 1 : 0;
         end else if (hcount + vcount*320 > 76799) begin
-            pixel_addr_in <= 0;
-            reading <= 1; //wait to load 1 frame before reading
+//            pixel_addr_in <= 0;
+//            reading <= 1; //wait to load 1 frame before reading
             update <= 0;
-            if (data != old_score) begin
+            if (data != old_score) begin //toavoid cheating and double counting the exact same image and position
                 old_score <= data;
                 counting <= 0;
             end
         end else begin
-            pixel_addr_in <= hcount + vcount*320;
+//            pixel_addr_in <= hcount + vcount*320;
             counting <= (frames == 5'b11111) ? 1 : 0; //only scoring last frame
             update <= 0;
         end
@@ -167,7 +167,7 @@ module top_level(
         pixel_in <= pixel_buff;
         old_output_pixels <= output_pixels;
         xclk_count <= xclk_count + 2'b01;
-        if (sw[3])begin
+/*        if (sw[3])begin
             //processed_pixels <= {red_diff<<2, green_diff<<2, blue_diff<<2};
             processed_pixels <= output_pixels - old_output_pixels;
         end else if (sw[4]) begin
@@ -176,25 +176,25 @@ module top_level(
             end else begin
                 processed_pixels <= 12'h000;
             end
-        end else if (sw[5]) begin
+        end else*/ if (sw[5]) begin
             if ((output_pixels[15:12]<4'b1000)&&(output_pixels[10:7]>4'b1000)&&(output_pixels[4:1]<4'b1000))begin
                 processed_pixels <= 12'h0F0;
             end else begin
                 processed_pixels <= 12'h000;
             end
-        end else if (sw[6]) begin
+        end /*else if (sw[6]) begin
             if ((output_pixels[15:12]<4'b1000)&&(output_pixels[10:7]<4'b1000)&&(output_pixels[4:1]>4'b1000))begin
                 processed_pixels <= 12'h00F;
             end else begin
                 processed_pixels <= 12'h000;
             end
-        end else begin
+        end */else begin
             processed_pixels = {output_pixels[15:12],output_pixels[10:7],output_pixels[4:1]};
         end
             
     end
     
-    assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
+//    assign pixel_addr_out = sw[2]?((hcount>>1)+(vcount>>1)*32'd320):hcount+vcount*32'd320;
     logic [2:0] checkerboard;
     assign checkerboard = hcount[8:6] + vcount[8:6]; //use 3 bits from hcount and vcount to make the checkerboard
 
@@ -226,7 +226,7 @@ module top_level(
     wire up,down;
     debounce db2(.reset_in(reset),.clock_in(clk_65mhz),.noisy_in(btnu),.clean_out(up));
     debounce db3(.reset_in(reset),.clock_in(clk_65mhz),.noisy_in(btnd),.clean_out(down));
-
+/*
     wire phsync,pvsync,pblank;
     pong_game pg(.vclock_in(clk_65mhz),.reset_in(reset),
                 .up_in(up),.down_in(down),.pspeed_in(sw[15:12]),
@@ -236,10 +236,11 @@ module top_level(
 
     wire border = (hcount==0 | hcount==1023 | vcount==0 | vcount==767 |
                    hcount == 512 | vcount == 384);
-
+*/
     reg b,hs,vs;
     always_ff @(posedge clk_65mhz) begin
-      if (sw[1:0] == 2'b01) begin
+      rgb <= cam;
+/*      if (sw[1:0] == 2'b01) begin
          // 1 pixel outline of visible area (white)
          hs <= hsync;
          vs <= vsync;
@@ -259,7 +260,7 @@ module top_level(
          //rgb <= pixel;
          rgb <= cam;
       end
-    end
+*/    end
 
 //    assign rgb = sw[0] ? {12{border}} : pixel ; //{{4{hcount[7]}}, {4{hcount[6]}}, {4{hcount[5]}}};
 
@@ -278,7 +279,7 @@ endmodule
 // pong_game: the game itself!
 //
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 module pong_game (
    input vclock_in,        // 65MHz clock
    input reset_in,         // 1 to initialize module
@@ -325,7 +326,7 @@ module synchronize #(parameter NSYNC = 3)  // number of sync flops.  must be >= 
     {out,sync} <= {sync[NSYNC-2:0],in};
   end
 endmodule
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Pushbutton Debounce Module (video version - 24 bits)  
