@@ -13,7 +13,7 @@ module scoring #(parameter THRESHOLD = 15)
 
     logic [6:0] points;
     logic [1:0] state;
-    logic [3:0] count; //how many pixels should count as 1 point (somewhat arbitrary for now)
+    logic [4:0] count; //how many pixels should count as 1 point (somewhat arbitrary for now)
 //    logic add_score;
     
     always_ff @(posedge clk) begin

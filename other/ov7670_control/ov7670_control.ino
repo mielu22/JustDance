@@ -22,7 +22,7 @@ uint8_t settings[][2] = {
 //{addr, value}, //dscription
   {0x12, 0x80}, //reset
   {0x01, 0x80}, //blue gain (default 80)
-  {0x02, 0x80}, //red gain  (default 80)
+  {0x02, 0xFF}, //red gain  (default 80)
   {0x6A, 0x00}, //green gain -- want it low
   {0xFF, 0xF0}, //delay
   {0x12, 0x14}, // COM7,     set RGB color output (QVGA and test pattern 0x6...for RGB video 0x4)

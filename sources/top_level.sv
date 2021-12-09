@@ -36,7 +36,7 @@ module top_level(
             
     wire [31:0] data;      //  instantiate 7-segment display; display (8) 4-bit hex
     wire [6:0] segments;
-    assign {cg, cf, ce, cd, cc, cb, ca} = segments[6:0];
+    assign {cg, cf, ce, cd, cc, cb, ca} = segments[6:0]; //{12'b0,data[31:12]}
     display_8hex display(.clk_in(clk_65mhz),.data_in(data), .seg_out(segments), .strobe_out(an));
     //assign seg[6:0] = segments;
     assign  dp = 1'b1;  // turn off the period
@@ -126,10 +126,17 @@ module top_level(
     logic counting;
     logic update;
     logic [31:0] old_score;
-    logic [4:0] frames; //30 fps
+    logic [4:0] frames; //because it goes at 30 fps
     
     scoring total(.clk(pclk_in),.reset(reset),.pixel(end_image),.counting(counting),.update(update),.out(data));
-    
+
+/*    ila_0 joes_ila(.clk(pclk_in), .probe0(end_image), 
+                                  .probe1(counting), 
+                                  .probe2(update),
+                                  .probe3(frames),
+                                  .probe4(data));
+*/
+
     always_ff @(posedge pclk_in)begin
         if (reset) begin
             counting <= 0;
@@ -137,18 +144,19 @@ module top_level(
             frames <= 0;
         end else if (hcount + vcount*320 == 76799) begin
             frames <= frames + 1;
-            update <= (frames == 5'b11111) ? 1 : 0;
+            update <= (frames == 0) ? 1 : 0;
         end else if (hcount + vcount*320 > 76799) begin
 //            pixel_addr_in <= 0;
 //            reading <= 1; //wait to load 1 frame before reading
             update <= 0;
-            if (data != old_score) begin //toavoid cheating and double counting the exact same image and position
+/*            if (data != old_score) begin //to avoid cheating and double counting the exact same image and position
                 old_score <= data;
                 counting <= 0;
             end
+            */
         end else begin
 //            pixel_addr_in <= hcount + vcount*320;
-            counting <= (frames == 5'b11111) ? 1 : 0; //only scoring last frame
+            counting <= (frames == 0) ? 1 : 0; //only scoring last frame
             update <= 0;
         end
     end
@@ -205,14 +213,6 @@ module top_level(
     assign cam = (sw[12]) ? end_image : { {4{checkerboard[2]}}, {4{checkerboard[1]}}, {4{checkerboard[0]}} };
 
     
-
-/*
-    ila_0 joes_ila(.clk(clk_65mhz),    .probe0(pixel_in), 
-                                        .probe1(pclk_in), 
-                                        .probe2(vsync_in),
-                                        .probe3(href_in),
-                                        .probe4(jbclk));
-*/
 
     camera_read  my_camera(.p_clock_in(pclk_in),
                           .vsync_in(vsync_in),
