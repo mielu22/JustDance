@@ -13,7 +13,7 @@ module scoring #(parameter THRESHOLD = 15)
 
     logic [6:0] points;
     logic [1:0] state;
-    logic [4:0] count; //how many pixels should count as 1 point (somewhat arbitrary for now)
+    logic [6:0] count; //how many pixels should count as 1 point (somewhat arbitrary for now)
 //    logic add_score;
     
     always_ff @(posedge clk) begin
@@ -23,12 +23,14 @@ module scoring #(parameter THRESHOLD = 15)
             state <= 0;
             count <= 0;
         end else begin
+//        if (counting && pixel != 12'h000 && pixel != 12'h0F0 && pixel != 12'hFFF) out <= out + 1;
             case (state)
                 0: begin //counting
-                    if (counting && pixel != 12'h000 && pixel != 12'h0F0 && pixel != 12'hFFF) count <= count + 1;
+                    if (pixel != 12'h000 && pixel != 12'h0F0 && pixel != 12'hFFF) count <= count + 1;
+//                    if (counting && pixel != 12'h000 && pixel != 12'h0F0 && pixel != 12'hFFF) count <= count + 1;
                                      //not purely black, green, or white means overlap which means points
-                    if (update) state <= 2;
-                    else if (count == THRESHOLD - 1) state <= 1;
+//                    if (update) state <= 2;
+                     if (count == THRESHOLD - 1) state <= 1;
                 end
                 1: begin
                     points <= points + 1;
